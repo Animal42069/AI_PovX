@@ -2,11 +2,12 @@
 using AIProject;
 using Manager;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AI_PovX
 {
-	public static class Controller
+    public static class Controller
 	{
 		public static bool toggled = false;
 		public static bool showCursor = false;
@@ -170,7 +171,8 @@ namespace AI_PovX
 				backupHead = chaCtrl.objHeadBone.transform.localScale;
 
 				if (Tools.ShouldHideHead())
-					chaCtrl.objHeadBone.transform.localScale = Vector3.zero;
+					//			chaCtrl.objHeadBone.transform.localScale = Vector3.zero;
+					chaCtrl.objHeadBone.transform.localScale = new Vector3(chaCtrl.objHeadBone.transform.localScale.x, chaCtrl.objHeadBone.transform.localScale.y, AI_PovX.HideHeadScaleZ.Value);
 			}
 		}
 
@@ -191,6 +193,65 @@ namespace AI_PovX
 				looker.neckLookCtrl.neckLookScript.aBones[0].neckBone.LookAt(target_pos);
 		}*/
 
+		public static void RotatePlayerTowardsCharacter(ChaControl character)
+        {
+			PlayerActor player = Map.Instance.Player;
+
+			Vector3 playerPosition = player.Position;
+			Vector3 agentPosition = character.objBodyBone.transform.position;
+
+			Vector2 playerForward = new Vector2(player.Forward.x, player.Forward.z);
+			Vector2 turnVector = new Vector2(agentPosition.x - playerPosition.x, agentPosition.z - playerPosition.z);
+
+			Transform neck = player.ChaControl.neckLookCtrl.neckLookScript.aBones[0].neckBone;
+
+			bodyAngle = player.Rotation.eulerAngles.y - Vector2.SignedAngle(playerForward, turnVector);
+			player.Rotation = bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
+
+			var leftEye = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
+			var rightEye = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
+
+			Vector3 playerEyePosition = Vector3.Lerp(leftEye.position, rightEye.position, 0.5f);
+			Vector3 playerLookPosition = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Mune00")).FirstOrDefault().position;
+
+			cameraAngleOffsetX = Tools.GetHeadRotationX(playerEyePosition, playerLookPosition);
+			cameraAngleOffsetY = 0;
+
+			cameraAngleY = player.Rotation.eulerAngles.y;
+			neck.rotation = Quaternion.Euler(
+				Tools.AngleClamp(
+					Tools.Mod2(neck.eulerAngles.x + cameraAngleOffsetX, 360f),
+					AI_PovX.NeckMin.Value,
+					AI_PovX.NeckMax.Value
+				),
+				cameraAngleY,
+				neck.eulerAngles.z
+			);
+
+			Camera.main.transform.rotation = neck.rotation;
+			Camera.main.transform.Rotate(new Vector3(Controller.cameraAngleOffsetX, Controller.cameraAngleOffsetY, 0f));
+
+			SetCamera(neck);
+
+			leftEye = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
+			rightEye = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
+
+			Vector3 characterEyePosition = Vector3.Lerp(leftEye.position, rightEye.position, 0.5f);
+			Vector3 characterLookPosition = playerEyePosition;
+
+			RotateCharacterHead(character, Tools.GetHeadRotationX(characterEyePosition, characterLookPosition));
+		}
+
+		public static void RotateCharacterHead(ChaControl character, float rotationX)
+        {
+			Transform head = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
+
+			if (head == null)
+				return;
+
+			head.localEulerAngles = new Vector3(rotationX, 0, 0);
+		}
+
 		public static void SetCamera(Transform neck)
 		{
 			Camera.main.fieldOfView =
@@ -202,6 +263,7 @@ namespace AI_PovX
 				(AI_PovX.OffsetX.Value + eyeOffset.x) * neck.right +
 				(AI_PovX.OffsetY.Value + eyeOffset.y) * neck.up +
 				(AI_PovX.OffsetZ.Value + eyeOffset.z) * neck.forward;
+			Camera.main.nearClipPlane = 0.1f;
 		}
 
 		// Used for scenes where the focused character cannot be controlled.
@@ -210,8 +272,6 @@ namespace AI_PovX
 			if (!inScene)
 			{
 				inScene = true;
-				// Reset rotation to prevent disorientation.
-				cameraAngleOffsetX = cameraAngleOffsetY = 0;
 
 				// Refresh when switching PoV modes.
 				SetChaControl(FromFocus());

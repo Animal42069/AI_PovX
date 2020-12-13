@@ -11,7 +11,7 @@ namespace AI_PovX
 	{
 		const string GUID = "com.2155x.fairbair.ai_povx";
 		const string Name = "AI PoV X";
-		const string Version = "1.0.2";
+		const string Version = "1.1.0";
 
 		const string SECTION_GENERAL = "General";
 		const string SECTION_CAMERA = "Camera";
@@ -65,7 +65,11 @@ namespace AI_PovX
 			"Head is always invisible during H scenes or " +
 			"situations where the player can't move.";
 
+		const string DESCRIPTION_HIDE_HEAD_SCALE_Z =
+			"Amount to scale Z when hiding head.";
+
 		internal static ConfigEntry<bool> HideHead { get; set; }
+		internal static ConfigEntry<float> HideHeadScaleZ { get; set; }
 		internal static ConfigEntry<bool> RevealAll { get; set; }
 		internal static ConfigEntry<bool> HSceneLockCursor { get; set; }
 
@@ -95,30 +99,31 @@ namespace AI_PovX
 			if (!Tools.IsMainGame())
 				return;
 
-			HideHead = Config.AddSetting(SECTION_GENERAL, "Hide Head", false, DESCRIPTION_HIDE_HEAD);
-			RevealAll = Config.AddSetting(SECTION_GENERAL, "Reveal All Girls", true, DESCRIPTION_REVEAL_ALL);
-			HSceneLockCursor = Config.AddSetting(SECTION_GENERAL, "Lock Cursor During H Scenes", false, DESCRIPTION_H_SCENE_LOCK_CURSOR);
+			HideHead = Config.Bind(SECTION_GENERAL, "Hide Head", false, DESCRIPTION_HIDE_HEAD);
+			HideHeadScaleZ = Config.Bind(SECTION_GENERAL, "Hide Head Scale Z", 0.1f, DESCRIPTION_HIDE_HEAD_SCALE_Z);
+			RevealAll = Config.Bind(SECTION_GENERAL, "Reveal All Girls", true, DESCRIPTION_REVEAL_ALL);
+			HSceneLockCursor = Config.Bind(SECTION_GENERAL, "Lock Cursor During H Scenes", false, DESCRIPTION_H_SCENE_LOCK_CURSOR);
 
-			Sensitivity = Config.AddSetting(SECTION_CAMERA, "Camera Sensitivity", 2f);
-			Fov = Config.AddSetting(SECTION_CAMERA, "Field of View", 35f);
-			ZoomFov = Config.AddSetting(SECTION_CAMERA, "Zoom Field of View", 5f);
-			OffsetX = Config.AddSetting(SECTION_CAMERA, "Offset X", 0f, DESCRIPTION_OFFSET_X);
-			OffsetY = Config.AddSetting(SECTION_CAMERA, "Offset Y", 0f, DESCRIPTION_OFFSET_Y);
-			OffsetZ = Config.AddSetting(SECTION_CAMERA, "Offset Z", 0f, DESCRIPTION_OFFSET_Z);
-			CameraMinX = Config.AddSetting(SECTION_CAMERA, "Min Camera Angle X", 80f, DESCRIPTION_CAMERA_MIN_X);
-			CameraMaxX = Config.AddSetting(SECTION_CAMERA, "Max Camera Angle X", 80f, DESCRIPTION_CAMERA_MAX_X);
-			CameraSpanY = Config.AddSetting(SECTION_CAMERA, "Camera Angle Span Y", 90f, DESCRIPTION_CAMERA_SPAN_Y);
+			Sensitivity = Config.Bind(SECTION_CAMERA, "Camera Sensitivity", 2f);
+			Fov = Config.Bind(SECTION_CAMERA, "Field of View", 35f);
+			ZoomFov = Config.Bind(SECTION_CAMERA, "Zoom Field of View", 5f);
+			OffsetX = Config.Bind(SECTION_CAMERA, "Offset X", 0f, DESCRIPTION_OFFSET_X);
+			OffsetY = Config.Bind(SECTION_CAMERA, "Offset Y", 0f, DESCRIPTION_OFFSET_Y);
+			OffsetZ = Config.Bind(SECTION_CAMERA, "Offset Z", 0f, DESCRIPTION_OFFSET_Z);
+			CameraMinX = Config.Bind(SECTION_CAMERA, "Min Camera Angle X", 80f, DESCRIPTION_CAMERA_MIN_X);
+			CameraMaxX = Config.Bind(SECTION_CAMERA, "Max Camera Angle X", 80f, DESCRIPTION_CAMERA_MAX_X);
+			CameraSpanY = Config.Bind(SECTION_CAMERA, "Camera Angle Span Y", 90f, DESCRIPTION_CAMERA_SPAN_Y);
 
-			RotateHead = Config.AddSetting(SECTION_ANIMATION, "Rotate Head", true, DESCRIPTION_ROTATE_HEAD);
-			NeckMin = Config.AddSetting(SECTION_ANIMATION, "Min Neck Angle X", 0f, DESCRIPTION_NECK_MIN);
-			NeckMax = Config.AddSetting(SECTION_ANIMATION, "Max Neck Angle X", 90f, DESCRIPTION_NECK_MAX);
-			HeadMax = Config.AddSetting(SECTION_ANIMATION, "Max Head Angle Y", 60f, DESCRIPTION_HEAD_MAX);
+			RotateHead = Config.Bind(SECTION_ANIMATION, "Rotate Head", true, DESCRIPTION_ROTATE_HEAD);
+			NeckMin = Config.Bind(SECTION_ANIMATION, "Min Neck Angle X", 0f, DESCRIPTION_NECK_MIN);
+			NeckMax = Config.Bind(SECTION_ANIMATION, "Max Neck Angle X", 90f, DESCRIPTION_NECK_MAX);
+			HeadMax = Config.Bind(SECTION_ANIMATION, "Max Head Angle Y", 60f, DESCRIPTION_HEAD_MAX);
 
-			PovKey = Config.AddSetting(SECTION_HOTKEYS, "PoV Toggle Key", new KeyboardShortcut(KeyCode.Comma));
-			CharaCycleKey = Config.AddSetting(SECTION_HOTKEYS, "Character Cycle Key", new KeyboardShortcut(KeyCode.Period), DESCRIPTION_CHARA_CYCLE_KEY);
-			CameraDragKey = Config.AddSetting(SECTION_HOTKEYS, "Camera Drag Key", new KeyboardShortcut(KeyCode.Mouse0), DESCRIPTION_CAMERA_DRAG_KEY);
-			CursorReleaseKey = Config.AddSetting(SECTION_HOTKEYS, "Cursor Release Key", new KeyboardShortcut(KeyCode.LeftControl), DESCRIPTION_CURSOR_RELEASE_KEY);
-			ZoomKey = Config.AddSetting(SECTION_HOTKEYS, "Zoom Key", new KeyboardShortcut(KeyCode.Z));
+			PovKey = Config.Bind(SECTION_HOTKEYS, "PoV Toggle Key", new KeyboardShortcut(KeyCode.Comma));
+			CharaCycleKey = Config.Bind(SECTION_HOTKEYS, "Character Cycle Key", new KeyboardShortcut(KeyCode.Period), DESCRIPTION_CHARA_CYCLE_KEY);
+			CameraDragKey = Config.Bind(SECTION_HOTKEYS, "Camera Drag Key", new KeyboardShortcut(KeyCode.Mouse0), DESCRIPTION_CAMERA_DRAG_KEY);
+			CursorReleaseKey = Config.Bind(SECTION_HOTKEYS, "Cursor Release Key", new KeyboardShortcut(KeyCode.LeftControl), DESCRIPTION_CURSOR_RELEASE_KEY);
+			ZoomKey = Config.Bind(SECTION_HOTKEYS, "Zoom Key", new KeyboardShortcut(KeyCode.Z));
 
 			HideHead.SettingChanged += (sender, args) =>
 			{
@@ -134,7 +139,7 @@ namespace AI_PovX
 				}
 			};
 
-			HarmonyWrapper.PatchAll(typeof(AI_PovX));
+			HarmonyLib.Harmony.CreateAndPatchAll(typeof(AI_PovX));
 		}
 
 		private void Update()

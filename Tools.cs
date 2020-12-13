@@ -1,6 +1,8 @@
 ﻿using AIChara;
 using AIProject;
 using Manager;
+using System;
+using System.Linq;
 using UnityEngine;
 
 namespace AI_PovX
@@ -30,11 +32,15 @@ namespace AI_PovX
 		public static Vector3 GetEyesOffset(ChaControl chaCtrl)
 		{
 			var neck = chaCtrl.neckLookCtrl.neckLookScript.aBones[0].neckBone;
-			var eyes = chaCtrl.eyeLookCtrl.eyeLookScript.eyeObjs;
+			//	var eyes = chaCtrl.eyeLookCtrl.eyeLookScript.eyeObjs;
+
+			Transform[] eyes = new Transform[2];
+			eyes[0] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
+			eyes[1] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
 
 			return Vector3.Lerp(
-				GetEyesOffsetInternal(neck, eyes[0].eyeTransform),
-				GetEyesOffsetInternal(neck, eyes[1].eyeTransform),
+				GetEyesOffsetInternal(neck, eyes[0]),
+				GetEyesOffsetInternal(neck, eyes[1]),
 				0.5f
 			);
 		}
@@ -85,6 +91,27 @@ namespace AI_PovX
 				return 360f - max;
 
 			return value;
+		}
+
+		public static float GetHeadRotationX(Vector3 eyePosition, Vector3 lookTarget)
+		{
+			float headRotationX = 0;
+			float hypotenuse = Vector3.Distance(eyePosition, lookTarget);
+			float side = Vector3.Distance(new Vector2(eyePosition.x, eyePosition.z), new Vector2(lookTarget.x, lookTarget.z));
+			if (hypotenuse != 0)
+				headRotationX = (float)(Math.Acos(side / hypotenuse) * 180 / Math.PI);
+
+			if (lookTarget.y > eyePosition.y)
+				headRotationX = -headRotationX;
+
+			headRotationX = Tools.Mod2(headRotationX, 360f);
+
+			if (headRotationX > 180)
+				headRotationX -= 360;
+			if (headRotationX < -180)
+				headRotationX += 360;
+
+			return Mathf.Clamp(headRotationX, -45, 45);
 		}
 	}
 }
