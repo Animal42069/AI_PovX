@@ -1,6 +1,7 @@
 ﻿using AIChara;
 using AIProject;
 using Manager;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -20,6 +21,8 @@ namespace AI_PovX
 		// This means that the values can be negative.
 		public static float cameraAngleOffsetX = 0f;
 		public static float cameraAngleOffsetY = 0f;
+		public static float headAngleOffsetX = 0f;
+		public static float headAngleOffsetY = 0f;
 		public static float cameraAngleY = 0f;
 
 		// 0 = Player; 1 = 1st Partner; 2 = 2nd Partner; 3 = ...
@@ -43,7 +46,9 @@ namespace AI_PovX
 				SetChaControl(FromFocus());
 
 				cameraAngleOffsetX = cameraAngleOffsetY = 0f;
-				cameraAngleY = chaCtrl.neckLookCtrl.neckLookScript.aBones[0].neckBone.eulerAngles.y;
+				headAngleOffsetX = headAngleOffsetY = 0f;
+
+				cameraAngleY = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault().eulerAngles.y;
 				bodyQuaternion = Map.Instance.Player.Rotation;
 				bodyAngle = bodyQuaternion.eulerAngles.y;
 				backupFov = Camera.main.fieldOfView;
@@ -113,12 +118,11 @@ namespace AI_PovX
 
 			if (Cursor.lockState != CursorLockMode.None || AI_PovX.CameraDragKey.Value.IsPressed())
 			{
-				float max = AI_PovX.CameraMaxX.Value;
-				float min = AI_PovX.CameraMinX.Value;
-				float span = AI_PovX.CameraSpanY.Value;
+				cameraAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX - x, -AI_PovX.CameraMaxX.Value, AI_PovX.CameraMinX.Value);
+				cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -AI_PovX.CameraSpanY.Value, AI_PovX.CameraSpanY.Value);
+				headAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX, -AI_PovX.HeadMaxX.Value, AI_PovX.HeadMinX.Value);
+				headAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY, -AI_PovX.HeadMaxY.Value, AI_PovX.HeadMaxY.Value);
 
-				cameraAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX - x, -max, min);
-				cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -span, span);
 				cameraAngleY = Tools.Mod2(cameraAngleY + y, 360f);
 			}
 		}
@@ -160,18 +164,22 @@ namespace AI_PovX
 
 		public static void SetChaControl(ChaControl next)
 		{
-			if (chaCtrl != null && backupHead != null)
-				chaCtrl.objHeadBone.transform.localScale = backupHead;
+			if (chaCtrl != null)
+			{
+				chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault().localRotation = Quaternion.Euler(0, 0, 0);
+
+				if (backupHead != null)
+					chaCtrl.objHeadBone.transform.localScale = backupHead;
+			}
 
 			chaCtrl = next;
-
 			if (chaCtrl != null)
 			{
 				eyeOffset = Tools.GetEyesOffset(chaCtrl);
 				backupHead = chaCtrl.objHeadBone.transform.localScale;
 
+				// Scale Z coordinate to hide head.  Preserves shadows (mostly)
 				if (Tools.ShouldHideHead())
-					//			chaCtrl.objHeadBone.transform.localScale = Vector3.zero;
 					chaCtrl.objHeadBone.transform.localScale = new Vector3(chaCtrl.objHeadBone.transform.localScale.x, chaCtrl.objHeadBone.transform.localScale.y, AI_PovX.HideHeadScaleZ.Value);
 			}
 		}
@@ -183,15 +191,6 @@ namespace AI_PovX
 				HSceneManager.Instance.females[focus - 1]?.ChaControl;
 		}
 
-		/*public static void Stare(ChaControl target, ChaControl looker)
-		{
-			Vector3 target_pos = target.objHeadBone.transform.position;
-			Vector3 looker_pos = looker.objHeadBone.transform.position;
-			Vector3 looker_dir = looker.objBodyBone.transform.forward;
-
-			if (Vector3.Angle(target_pos - looker_pos, looker_dir) <= AI_PovX.LookMaxRange.Value)
-				looker.neckLookCtrl.neckLookScript.aBones[0].neckBone.LookAt(target_pos);
-		}*/
 
 		public static void RotatePlayerTowardsCharacter(ChaControl character)
         {
@@ -203,35 +202,26 @@ namespace AI_PovX
 			Vector2 playerForward = new Vector2(player.Forward.x, player.Forward.z);
 			Vector2 turnVector = new Vector2(agentPosition.x - playerPosition.x, agentPosition.z - playerPosition.z);
 
-			Transform neck = player.ChaControl.neckLookCtrl.neckLookScript.aBones[0].neckBone;
-
 			bodyAngle = player.Rotation.eulerAngles.y - Vector2.SignedAngle(playerForward, turnVector);
 			player.Rotation = bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
-
+			var head = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
 			var leftEye = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
 			var rightEye = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
 
+			head.localRotation = Quaternion.Euler(0, 0, 0);
 			Vector3 playerEyePosition = Vector3.Lerp(leftEye.position, rightEye.position, 0.5f);
 			Vector3 playerLookPosition = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Mune00")).FirstOrDefault().position;
 
-			cameraAngleOffsetX = Tools.GetHeadRotationX(playerEyePosition, playerLookPosition);
-			cameraAngleOffsetY = 0;
+			headAngleOffsetX = cameraAngleOffsetX = Tools.GetHeadRotationX(playerEyePosition, playerLookPosition);
+			headAngleOffsetY = cameraAngleOffsetY = 0;
+			cameraAngleY = head.eulerAngles.y;
 
-			cameraAngleY = player.Rotation.eulerAngles.y;
-			neck.rotation = Quaternion.Euler(
-				Tools.AngleClamp(
-					Tools.Mod2(neck.eulerAngles.x + cameraAngleOffsetX, 360f),
-					AI_PovX.NeckMin.Value,
-					AI_PovX.NeckMax.Value
-				),
-				cameraAngleY,
-				neck.eulerAngles.z
-			);
+			head.localRotation = Quaternion.Euler(headAngleOffsetX, headAngleOffsetY, 0);
 
-			Camera.main.transform.rotation = neck.rotation;
-			Camera.main.transform.Rotate(new Vector3(Controller.cameraAngleOffsetX, Controller.cameraAngleOffsetY, 0f));
+			Camera.main.transform.rotation = head.rotation;
+			Camera.main.transform.Rotate(new Vector3(cameraAngleOffsetX - headAngleOffsetX, cameraAngleOffsetY - headAngleOffsetY, 0f));
 
-			SetCamera(neck);
+			SetCamera(head);
 
 			leftEye = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
 			rightEye = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
@@ -252,18 +242,18 @@ namespace AI_PovX
 			head.localEulerAngles = new Vector3(rotationX, 0, 0);
 		}
 
-		public static void SetCamera(Transform neck)
+		public static void SetCamera(Transform head)
 		{
 			Camera.main.fieldOfView =
 				AI_PovX.ZoomKey.Value.IsPressed() ?
 					AI_PovX.ZoomFov.Value :
 					AI_PovX.Fov.Value;
 			Camera.main.transform.position =
-				neck.position +
-				(AI_PovX.OffsetX.Value + eyeOffset.x) * neck.right +
-				(AI_PovX.OffsetY.Value + eyeOffset.y) * neck.up +
-				(AI_PovX.OffsetZ.Value + eyeOffset.z) * neck.forward;
-			Camera.main.nearClipPlane = 0.1f;
+				head.position +
+				(AI_PovX.OffsetX.Value + eyeOffset.x) * head.right +
+				(AI_PovX.OffsetY.Value + eyeOffset.y) * head.up +
+				(AI_PovX.OffsetZ.Value + eyeOffset.z) * head.forward;
+			Camera.main.nearClipPlane = AI_PovX.NearClip.Value;
 		}
 
 		// Used for scenes where the focused character cannot be controlled.
@@ -277,11 +267,12 @@ namespace AI_PovX
 				SetChaControl(FromFocus());
 			}
 
-			Transform neck = chaCtrl.neckLookCtrl.neckLookScript.aBones[0].neckBone;
-			// Preserve current neck rotation.
-			Camera.main.transform.rotation = neck.rotation;
-			Camera.main.transform.Rotate(new Vector3(cameraAngleOffsetX, cameraAngleOffsetY, 0f));
-			SetCamera(neck);
+			Transform head = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
+			head.localRotation = Quaternion.Euler(headAngleOffsetX, headAngleOffsetY, 0);
+
+			Camera.main.transform.rotation = head.rotation;
+			Camera.main.transform.Rotate(new Vector3(cameraAngleOffsetX - headAngleOffsetX, cameraAngleOffsetY - headAngleOffsetY, 0f));
+			SetCamera(head);
 		}
 
 		// PoV exclusively for the player.
@@ -289,59 +280,58 @@ namespace AI_PovX
 		{
 			PlayerActor player = Map.Instance.Player;
 
-			if (player.Controller.State is AIProject.Player.Normal)
+			// When the player is unable to move, treat it as a scene.
+			if (!(player.Controller.State is AIProject.Player.Normal))
 			{
-				if (inScene)
-				{
-					inScene = false;
+				ScenePoV();
+				return;
+			}
 
-					// Refresh when switching PoV modes.
-					SetChaControl(FromFocus());
-				}
+			if (inScene)
+			{
+				inScene = false;
 
-				if (!AI_PovX.RotateHead.Value || player.StateInfo.move.magnitude > 0f)
-				{
-					// Move entire body when moving.
-					bodyAngle = cameraAngleY;
-					bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
-				}
-				else
-				{
-					// Rotate head first. If head rotation is at the limit, rotate body.
-					float angle = Tools.GetClosestAngle(bodyAngle, cameraAngleY, out bool clockwise);
-					float max = AI_PovX.HeadMax.Value;
+				// Refresh when switching PoV modes.
+				SetChaControl(FromFocus());
+			}
 
-					if (angle > max)
-					{
-						if (clockwise)
-							bodyAngle = Tools.Mod2(bodyAngle + angle - max, 360f);
-						else
-							bodyAngle = Tools.Mod2(bodyAngle - angle + max, 360f);
-
-						bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
-					}
-				}
-
-				Transform neck = chaCtrl.neckLookCtrl.neckLookScript.aBones[0].neckBone;
-				Vector3 neck_euler = neck.eulerAngles;
-
-				Camera.main.transform.rotation = Quaternion.Euler(cameraAngleOffsetX, cameraAngleY, 0f);
-				player.Rotation = bodyQuaternion;
-				neck.rotation = Quaternion.Euler(
-					Tools.AngleClamp(
-						Tools.Mod2(neck_euler.x + cameraAngleOffsetX, 360f),
-						AI_PovX.NeckMin.Value,
-						AI_PovX.NeckMax.Value
-					),
-					cameraAngleY,
-					neck_euler.z
-				);
-
-				SetCamera(neck);
+			if (!AI_PovX.RotateHead.Value || player.StateInfo.move.magnitude > 0f)
+			{
+				// Move entire body when moving.
+				bodyAngle = cameraAngleY;
+				bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
 			}
 			else
-				// When the player is unable to move, treat it as a scene.
-				ScenePoV();
+			{
+				// Rotate head first. If head rotation is at the limit, rotate body.
+				float angle = Tools.GetClosestAngle(bodyAngle, cameraAngleY, out bool clockwise);
+
+				if (angle > AI_PovX.HeadMaxY.Value)
+				{
+					if (clockwise)
+						bodyAngle = Tools.Mod2(bodyAngle + angle - AI_PovX.HeadMaxY.Value, 360f);
+					else
+						bodyAngle = Tools.Mod2(bodyAngle - angle + AI_PovX.HeadMaxY.Value, 360f);
+
+					bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
+				}
+			}
+
+			player.Rotation = bodyQuaternion;
+			Transform head = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
+			head.localRotation = Quaternion.Euler(headAngleOffsetX, headAngleOffsetY, 0);
+
+			if (AI_PovX.HeadBob.Value)
+			{
+				Camera.main.transform.rotation = head.rotation;
+				Camera.main.transform.Rotate(new Vector3(cameraAngleOffsetX - headAngleOffsetX, cameraAngleOffsetY - headAngleOffsetY, 0f));
+			}
+			else
+            {
+				Camera.main.transform.rotation = Quaternion.Euler(cameraAngleOffsetX, cameraAngleY, 0f);
+			}
+
+			SetCamera(head);
 		}
 	}
 }

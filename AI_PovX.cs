@@ -40,15 +40,18 @@ namespace AI_PovX
 		const string DESCRIPTION_CAMERA_SPAN_Y =
 			"How far can the camera be rotated horizontally? " +
 			"Only applies during scenes where the player character can't move.";
+		const string DESCRIPTION_CAMERA_HEAD_BOB =
+			"Should the camera rotate up and down/side to side along with the head?" +
+			"Only applies with free roam camera.";
 
 		const string DESCRIPTION_ROTATE_HEAD =
 			"Should the head rotate first before turning the whole body? " +
 			"Only applies with free roam camera.";
-		const string DESCRIPTION_NECK_MIN =
+		const string DESCRIPTION_HEAD_MIN_X =
 			"Highest downward angle the head can rotate.";
-		const string DESCRIPTION_NECK_MAX =
+		const string DESCRIPTION_HEAD_MAX_X =
 			"Highest upward angle the head can rotate.";
-		const string DESCRIPTION_HEAD_MAX =
+		const string DESCRIPTION_HEAD_MAX_Y =
 			"The farthest the head can rotate until the body would rotate. " +
 			"Only applies with free roam camera and the player isn't moving.";
 
@@ -70,10 +73,12 @@ namespace AI_PovX
 
 		internal static ConfigEntry<bool> HideHead { get; set; }
 		internal static ConfigEntry<float> HideHeadScaleZ { get; set; }
+		internal static ConfigEntry<bool> HeadBob { get; set; }
 		internal static ConfigEntry<bool> RevealAll { get; set; }
 		internal static ConfigEntry<bool> HSceneLockCursor { get; set; }
 
 		internal static ConfigEntry<float> Sensitivity { get; set; }
+		internal static ConfigEntry<float> NearClip { get; set; }
 		internal static ConfigEntry<float> Fov { get; set; }
 		internal static ConfigEntry<float> ZoomFov { get; set; }
 		internal static ConfigEntry<float> OffsetX { get; set; }
@@ -84,9 +89,9 @@ namespace AI_PovX
 		internal static ConfigEntry<float> CameraSpanY { get; set; }
 
 		internal static ConfigEntry<bool> RotateHead { get; set; }
-		internal static ConfigEntry<float> NeckMin { get; set; }
-		internal static ConfigEntry<float> NeckMax { get; set; }
-		internal static ConfigEntry<float> HeadMax { get; set; }
+		internal static ConfigEntry<float> HeadMinX { get; set; }
+		internal static ConfigEntry<float> HeadMaxX { get; set; }
+		internal static ConfigEntry<float> HeadMaxY { get; set; }
 
 		internal static ConfigEntry<KeyboardShortcut> PovKey { get; set; }
 		internal static ConfigEntry<KeyboardShortcut> CharaCycleKey { get; set; }
@@ -100,24 +105,26 @@ namespace AI_PovX
 				return;
 
 			HideHead = Config.Bind(SECTION_GENERAL, "Hide Head", false, DESCRIPTION_HIDE_HEAD);
-			HideHeadScaleZ = Config.Bind(SECTION_GENERAL, "Hide Head Scale Z", 0.1f, DESCRIPTION_HIDE_HEAD_SCALE_Z);
+			HideHeadScaleZ = Config.Bind(SECTION_GENERAL, "Hide Head Scale Z", 0.1f, new ConfigDescription(DESCRIPTION_HIDE_HEAD_SCALE_Z, new AcceptableValueRange<float>(0f, 1f)));
 			RevealAll = Config.Bind(SECTION_GENERAL, "Reveal All Girls", true, DESCRIPTION_REVEAL_ALL);
 			HSceneLockCursor = Config.Bind(SECTION_GENERAL, "Lock Cursor During H Scenes", false, DESCRIPTION_H_SCENE_LOCK_CURSOR);
 
 			Sensitivity = Config.Bind(SECTION_CAMERA, "Camera Sensitivity", 2f);
-			Fov = Config.Bind(SECTION_CAMERA, "Field of View", 35f);
-			ZoomFov = Config.Bind(SECTION_CAMERA, "Zoom Field of View", 5f);
+			NearClip = Config.Bind(SECTION_CAMERA, "Camera Near Clip Plane", 0.75f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 2f)));
+			Fov = Config.Bind(SECTION_CAMERA, "Field of View", 60f);
+			ZoomFov = Config.Bind(SECTION_CAMERA, "Zoom Field of View", 15f);
 			OffsetX = Config.Bind(SECTION_CAMERA, "Offset X", 0f, DESCRIPTION_OFFSET_X);
 			OffsetY = Config.Bind(SECTION_CAMERA, "Offset Y", 0f, DESCRIPTION_OFFSET_Y);
 			OffsetZ = Config.Bind(SECTION_CAMERA, "Offset Z", 0f, DESCRIPTION_OFFSET_Z);
 			CameraMinX = Config.Bind(SECTION_CAMERA, "Min Camera Angle X", 80f, DESCRIPTION_CAMERA_MIN_X);
 			CameraMaxX = Config.Bind(SECTION_CAMERA, "Max Camera Angle X", 80f, DESCRIPTION_CAMERA_MAX_X);
 			CameraSpanY = Config.Bind(SECTION_CAMERA, "Camera Angle Span Y", 90f, DESCRIPTION_CAMERA_SPAN_Y);
+			HeadBob = Config.Bind(SECTION_CAMERA, "Camera Head Bob", false, DESCRIPTION_CAMERA_HEAD_BOB);
 
 			RotateHead = Config.Bind(SECTION_ANIMATION, "Rotate Head", true, DESCRIPTION_ROTATE_HEAD);
-			NeckMin = Config.Bind(SECTION_ANIMATION, "Min Neck Angle X", 0f, DESCRIPTION_NECK_MIN);
-			NeckMax = Config.Bind(SECTION_ANIMATION, "Max Neck Angle X", 90f, DESCRIPTION_NECK_MAX);
-			HeadMax = Config.Bind(SECTION_ANIMATION, "Max Head Angle Y", 60f, DESCRIPTION_HEAD_MAX);
+			HeadMinX = Config.Bind(SECTION_ANIMATION, "Min Neck Angle X", 45f, DESCRIPTION_HEAD_MIN_X);
+			HeadMaxX = Config.Bind(SECTION_ANIMATION, "Max Neck Angle X", 60f, DESCRIPTION_HEAD_MAX_X);
+			HeadMaxY = Config.Bind(SECTION_ANIMATION, "Max Head Angle Y", 60f, DESCRIPTION_HEAD_MAX_Y);
 
 			PovKey = Config.Bind(SECTION_HOTKEYS, "PoV Toggle Key", new KeyboardShortcut(KeyCode.Comma));
 			CharaCycleKey = Config.Bind(SECTION_HOTKEYS, "Character Cycle Key", new KeyboardShortcut(KeyCode.Period), DESCRIPTION_CHARA_CYCLE_KEY);
@@ -126,6 +133,11 @@ namespace AI_PovX
 			ZoomKey = Config.Bind(SECTION_HOTKEYS, "Zoom Key", new KeyboardShortcut(KeyCode.Z));
 
 			HideHead.SettingChanged += (sender, args) =>
+			{
+				Controller.SetChaControl(Controller.FromFocus());
+			};
+
+			HideHeadScaleZ.SettingChanged += (sender, args) =>
 			{
 				Controller.SetChaControl(Controller.FromFocus());
 			};

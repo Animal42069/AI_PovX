@@ -31,27 +31,26 @@ namespace AI_PovX
 		// Return the offset of the eyes in the neck's object space.
 		public static Vector3 GetEyesOffset(ChaControl chaCtrl)
 		{
-			var neck = chaCtrl.neckLookCtrl.neckLookScript.aBones[0].neckBone;
-			//	var eyes = chaCtrl.eyeLookCtrl.eyeLookScript.eyeObjs;
+			Transform head = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
 
 			Transform[] eyes = new Transform[2];
 			eyes[0] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
 			eyes[1] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
 
 			return Vector3.Lerp(
-				GetEyesOffsetInternal(neck, eyes[0]),
-				GetEyesOffsetInternal(neck, eyes[1]),
+				GetEyesOffsetInternal(head, eyes[0]),
+				GetEyesOffsetInternal(head, eyes[1]),
 				0.5f
 			);
 		}
 		
-		private static Vector3 GetEyesOffsetInternal(Transform neck, Transform eye)
+		private static Vector3 GetEyesOffsetInternal(Transform head, Transform eye)
 		{
 			Vector3 offset = Vector3.zero;
 
 			for (int i = 0; i < 50; i++)
 			{
-				if (eye == null || eye == neck)
+				if (eye == null || eye == head)
 					break;
 
 				offset += eye.localPosition;
@@ -111,7 +110,7 @@ namespace AI_PovX
 			if (headRotationX < -180)
 				headRotationX += 360;
 
-			return Mathf.Clamp(headRotationX, -45, 45);
+			return Mathf.Clamp(headRotationX, -AI_PovX.HeadMaxX.Value, AI_PovX.HeadMinX.Value);
 		}
 	}
 }
