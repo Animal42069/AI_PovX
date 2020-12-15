@@ -37,7 +37,8 @@ namespace AI_PovX
 		public static HScene hScene;
 		public static string currentHMotion;
 
-		private static readonly List<string> maleLockHeadHPositions = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_04", "aia_f_06", "aia_f_07", "aia_f_08", /**/"aia_f_10", "aia_f_11", "aia_f_12", "aia_f_13", "aia_f_18", "aia_f_19", "aia_f_23", "aia_f_24", "aia_f_26", /**/"ait_f_00", /**/"ait_f_07", "ai3p", "h2a_f_00" };
+		private static readonly List<string> maleLockHeadAllHPositions = new List<string>() { "aia_f_10", "ait_f_00", "ait_f_07"};
+		private static readonly List<string> maleLockHeadHPositions = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_04", "aia_f_06", "aia_f_07", "aia_f_08", "aia_f_11", "aia_f_12", "aia_f_13", "aia_f_18", "aia_f_19", "aia_f_23", "aia_f_24", "aia_f_26", "ai3p", "h2a_f_00" };
 		private static readonly List<string> lockHeadHMotionExceptions = new List<string>() { "Idle", "_A" };
 
 		public static void TogglePoV(bool flag)
@@ -124,20 +125,23 @@ namespace AI_PovX
 
 			if (Cursor.lockState != CursorLockMode.None || AI_PovX.CameraDragKey.Value.IsPressed())
 			{
-				cameraAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX - x, -AI_PovX.CameraMaxX.Value, AI_PovX.CameraMinX.Value);
-				cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -AI_PovX.CameraSpanY.Value, AI_PovX.CameraSpanY.Value);
-				headAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX, -AI_PovX.HeadMaxX.Value, AI_PovX.HeadMinX.Value);
-				headAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY, -AI_PovX.HeadMaxY.Value, AI_PovX.HeadMaxY.Value);
+				if (Tools.IsHScene() && lockMaleHeadPosition)
+				{
+					cameraAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX - x, -(AI_PovX.CameraMaxX.Value - AI_PovX.HeadMaxX.Value), (AI_PovX.CameraMinX.Value - AI_PovX.HeadMinX.Value));
+					cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -(AI_PovX.CameraSpanY.Value- AI_PovX.HeadMaxY.Value), (AI_PovX.CameraSpanY.Value - AI_PovX.HeadMaxY.Value));
+					headAngleOffsetX = 0;
+					headAngleOffsetY = 0;
+				}
+				else
+				{
+					cameraAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX - x, -AI_PovX.CameraMaxX.Value, AI_PovX.CameraMinX.Value);
+					cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -AI_PovX.CameraSpanY.Value, AI_PovX.CameraSpanY.Value);
+					headAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX, -AI_PovX.HeadMaxX.Value, AI_PovX.HeadMinX.Value);
+					headAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY, -AI_PovX.HeadMaxY.Value, AI_PovX.HeadMaxY.Value);
+				}
 
 				cameraAngleY = Tools.Mod2(cameraAngleY + y, 360f);
 			}
-
-			if (Tools.IsHScene() && lockMaleHeadPosition)
-            {
-				headAngleOffsetX = 0;
-				headAngleOffsetY = 0;
-			}
-
 		}
 
 		public static void LateUpdate()
@@ -363,7 +367,8 @@ namespace AI_PovX
 			if (currentHAnimation == null || currentHMotion == null)
 				return;
 
-			if (maleLockHeadHPositions.Contains(currentHAnimation) && !lockHeadHMotionExceptions.Contains(currentHMotion))
+			if (maleLockHeadAllHPositions.Contains(currentHAnimation) || 
+			   (maleLockHeadHPositions.Contains(currentHAnimation) && !lockHeadHMotionExceptions.Contains(currentHMotion)))
 				lockMaleHeadPosition = true;
 		}
 	}

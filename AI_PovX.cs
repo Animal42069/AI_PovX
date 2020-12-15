@@ -85,7 +85,7 @@ namespace AI_PovX
 		internal static ConfigEntry<float> OffsetZ { get; set; }
 		internal static ConfigEntry<float> CameraMinX { get; set; }
 		internal static ConfigEntry<float> CameraMaxX { get; set; }
-		internal static ConfigEntry<float> CameraSpanY { get; set; }
+		internal static ConfigEntry<float> CameraSpanY { get; set; }	
 		internal static ConfigEntry<CameraLocation> CameraPoVLocation { get; set; }
 
 		internal static ConfigEntry<bool> RotateHead { get; set; }
