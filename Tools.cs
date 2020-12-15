@@ -37,11 +37,15 @@ namespace AI_PovX
 			eyes[0] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
 			eyes[1] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
 
+			if (AI_PovX.CameraPoVLocation.Value == AI_PovX.CameraLocation.LeftEye)
+				return GetEyesOffsetInternal(head, eyes[0]);
+			else if (AI_PovX.CameraPoVLocation.Value == AI_PovX.CameraLocation.RightEye)
+				return GetEyesOffsetInternal(head, eyes[1]);
+
 			return Vector3.Lerp(
 				GetEyesOffsetInternal(head, eyes[0]),
 				GetEyesOffsetInternal(head, eyes[1]),
-				0.5f
-			);
+				0.5f);
 		}
 		
 		private static Vector3 GetEyesOffsetInternal(Transform head, Transform eye)

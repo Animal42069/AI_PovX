@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using Manager;
 using BepInEx;
-using BepInEx.Harmony;
 using BepInEx.Configuration;
 
 namespace AI_PovX
@@ -87,6 +86,7 @@ namespace AI_PovX
 		internal static ConfigEntry<float> CameraMinX { get; set; }
 		internal static ConfigEntry<float> CameraMaxX { get; set; }
 		internal static ConfigEntry<float> CameraSpanY { get; set; }
+		internal static ConfigEntry<CameraLocation> CameraPoVLocation { get; set; }
 
 		internal static ConfigEntry<bool> RotateHead { get; set; }
 		internal static ConfigEntry<float> HeadMinX { get; set; }
@@ -98,6 +98,13 @@ namespace AI_PovX
 		internal static ConfigEntry<KeyboardShortcut> CameraDragKey { get; set; }
 		internal static ConfigEntry<KeyboardShortcut> CursorReleaseKey { get; set; }
 		internal static ConfigEntry<KeyboardShortcut> ZoomKey { get; set; }
+
+		public enum CameraLocation
+        {
+			Center,
+			LeftEye,
+			RightEye
+        }
 
 		private void Awake()
 		{
@@ -120,6 +127,7 @@ namespace AI_PovX
 			CameraMaxX = Config.Bind(SECTION_CAMERA, "Max Camera Angle X", 80f, DESCRIPTION_CAMERA_MAX_X);
 			CameraSpanY = Config.Bind(SECTION_CAMERA, "Camera Angle Span Y", 90f, DESCRIPTION_CAMERA_SPAN_Y);
 			HeadBob = Config.Bind(SECTION_CAMERA, "Camera Head Bob", false, DESCRIPTION_CAMERA_HEAD_BOB);
+			CameraPoVLocation = Config.Bind(SECTION_CAMERA, "Camera Location", CameraLocation.Center);
 
 			RotateHead = Config.Bind(SECTION_ANIMATION, "Rotate Head", true, DESCRIPTION_ROTATE_HEAD);
 			HeadMinX = Config.Bind(SECTION_ANIMATION, "Min Neck Angle X", 45f, DESCRIPTION_HEAD_MIN_X);
@@ -131,6 +139,11 @@ namespace AI_PovX
 			CameraDragKey = Config.Bind(SECTION_HOTKEYS, "Camera Drag Key", new KeyboardShortcut(KeyCode.Mouse0), DESCRIPTION_CAMERA_DRAG_KEY);
 			CursorReleaseKey = Config.Bind(SECTION_HOTKEYS, "Cursor Release Key", new KeyboardShortcut(KeyCode.LeftControl), DESCRIPTION_CURSOR_RELEASE_KEY);
 			ZoomKey = Config.Bind(SECTION_HOTKEYS, "Zoom Key", new KeyboardShortcut(KeyCode.Z));
+
+			CameraPoVLocation.SettingChanged += (sender, args) =>
+			{
+				Controller.SetChaControl(Controller.FromFocus());
+			};
 
 			HideHead.SettingChanged += (sender, args) =>
 			{

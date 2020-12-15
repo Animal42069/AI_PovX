@@ -1,9 +1,7 @@
 ﻿using AIChara;
 using AIProject;
 using HarmonyLib;
-using Manager;
 using System;
-using UnityEngine;
 
 namespace AI_PovX
 {
@@ -67,61 +65,31 @@ namespace AI_PovX
 			Controller.RotateCharacterHead(__instance.ChaControl, 0);
 		}
 
-		/*	[HarmonyPrefix, HarmonyPatch(typeof(AgentActor), "StartCommunication")]
-			public static void AgentActor_StartCommunication(AgentActor __instance)
-			{
-				Console.WriteLine($"AgentActor_StartCommunication {__instance.ChaControl.name} AttitudeID {__instance.AttitudeID} UseNeckLook {__instance.UseNeckLook}");
-				Controller.RotatePlayerTowardsCharacter(__instance.ChaControl);
-			}
+		[HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
+		public static void HScene_Post_SetStartVoice(HScene __instance)
+        {
+			Controller.hScene = __instance;
+		}
 
-			[HarmonyPostfix, HarmonyPatch(typeof(AgentActor), "EndCommunication")]
-			public static void AgentActor_EndCommunication(AgentActor __instance)
-			{
-				Console.WriteLine($"AgentActor_EndCommunication {__instance.ChaControl.name}");
-				Controller.RotateCharacterHead(__instance.ChaControl, 0);
-			}
-
-			[HarmonyPrefix, HarmonyPatch(typeof(MerchantActor), "StartCommunication")]
-			public static void MerchantActor_StartCommunication(MerchantActor __instance)
-			{
-				Console.WriteLine($"MerchantActor_StartCommunication {__instance.ChaControl.name}");
-				Controller.RotatePlayerTowardsCharacter(__instance.ChaControl);
-			}
-
-			[HarmonyPostfix, HarmonyPatch(typeof(MerchantActor), "EndCommunication")]
-			public static void MerchantActor_EndCommunication(MerchantActor __instance)
-			{
-				Console.WriteLine($"MerchantActor_EndCommunication {__instance.ChaControl.name}");
-				Controller.RotateCharacterHead(__instance.ChaControl, 0);
-			}
-		*/
-		/*[HarmonyPostfix, HarmonyPatch(typeof(NeckLookControllerVer2), "LateUpdate")]
-		public static void Postfix_NeckLookControllerVer2_LateUpdate(NeckLookControllerVer2 __instance)
+		[HarmonyPostfix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+		public static void HScene_Post_ChangeAnimation()
 		{
-			if (!Controller.shouldStare)
+			Controller.CheckHSceneHeadLock();
+		}
+
+		[HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
+		public static void HScene_Post_SetMovePositionPoint()
+        {
+			Controller.CheckHSceneHeadLock();
+		}
+
+		[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
+		public static void ChaControl_Post_SetPlay(ChaControl __instance, string _strAnmName)
+		{
+			if (__instance == null || _strAnmName.IsNullOrEmpty())
 				return;
 
-			if (!Tools.IsHScene())
-				return;
-
-			Actor[] females = HSceneManager.Instance.females;
-			ChaControl playerChaCtrl = Map.Instance.Player.ChaControl;
-
-			if (__instance == playerChaCtrl.neckLookCtrl)
-				Controller.Stare(females[0].ChaControl, playerChaCtrl);
-			else
-				foreach (Actor female in females)
-					if (female != null)
-					{
-						ChaControl chaCtrl = female.ChaControl;
-
-						if (__instance == chaCtrl.neckLookCtrl)
-						{
-							Controller.Stare(playerChaCtrl, chaCtrl);
-
-							break;
-						}
-					}
-		}*/
+			Controller.CheckHSceneHeadLock(_strAnmName);
+		}
 	}
 }

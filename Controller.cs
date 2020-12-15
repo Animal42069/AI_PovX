@@ -1,7 +1,6 @@
 ﻿using AIChara;
 using AIProject;
 using Manager;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -33,6 +32,13 @@ namespace AI_PovX
 		public static float backupFov;
 
 		public static bool inScene;
+		public static bool lockMaleHeadPosition;
+
+		public static HScene hScene;
+		public static string currentHMotion;
+
+		private static readonly List<string> maleLockHeadHPositions = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_04", "aia_f_06", "aia_f_07", "aia_f_08", /**/"aia_f_10", "aia_f_11", "aia_f_12", "aia_f_13", "aia_f_18", "aia_f_19", "aia_f_23", "aia_f_24", "aia_f_26", /**/"ait_f_00", /**/"ait_f_07", "ai3p", "h2a_f_00" };
+		private static readonly List<string> lockHeadHMotionExceptions = new List<string>() { "Idle", "_A" };
 
 		public static void TogglePoV(bool flag)
 		{
@@ -125,6 +131,13 @@ namespace AI_PovX
 
 				cameraAngleY = Tools.Mod2(cameraAngleY + y, 360f);
 			}
+
+			if (Tools.IsHScene() && lockMaleHeadPosition)
+            {
+				headAngleOffsetX = 0;
+				headAngleOffsetY = 0;
+			}
+
 		}
 
 		public static void LateUpdate()
@@ -300,6 +313,7 @@ namespace AI_PovX
 				// Move entire body when moving.
 				bodyAngle = cameraAngleY;
 				bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
+				headAngleOffsetY = cameraAngleOffsetY = 0;
 			}
 			else
 			{
@@ -332,6 +346,25 @@ namespace AI_PovX
 			}
 
 			SetCamera(head);
+		}
+
+		public static void CheckHSceneHeadLock(string hMotion = null)
+		{
+			lockMaleHeadPosition = false;
+
+			if (!Tools.IsHScene() || hScene == null)
+				return;
+
+			string currentHAnimation = hScene.ctrlFlag.nowAnimationInfo.fileFemale;
+
+			if (hMotion != null)
+				currentHMotion = hMotion;
+
+			if (currentHAnimation == null || currentHMotion == null)
+				return;
+
+			if (maleLockHeadHPositions.Contains(currentHAnimation) && !lockHeadHMotionExceptions.Contains(currentHMotion))
+				lockMaleHeadPosition = true;
 		}
 	}
 }
