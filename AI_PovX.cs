@@ -10,7 +10,7 @@ namespace AI_PovX
 	{
 		const string GUID = "com.2155x.fairbair.ai_povx";
 		const string Name = "AI PoV X";
-		const string Version = "1.1.0";
+		const string Version = "1.1.1";
 
 		const string SECTION_GENERAL = "General";
 		const string SECTION_CAMERA = "Camera";

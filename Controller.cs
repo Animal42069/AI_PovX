@@ -273,6 +273,34 @@ namespace AI_PovX
 			Camera.main.nearClipPlane = AI_PovX.NearClip.Value;
 		}
 
+		// Used for fishing scene.
+		public static void FishingPoV()
+		{
+			if (!inScene)
+			{
+				inScene = true;
+
+				// Refresh when switching PoV modes.
+				SetChaControl(FromFocus());
+			}
+
+			PlayerActor player = Map.Instance.Player;
+			AIProject.MiniGames.Fishing.Lure lure = player.GetComponentInChildren<AIProject.MiniGames.Fishing.FishingManager>().lure;
+
+			Transform head = player.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
+			Quaternion oldRotation = head.localRotation;
+
+			if (lure == null || (lure.state != AIProject.MiniGames.Fishing.Lure.State.Float && lure.state != AIProject.MiniGames.Fishing.Lure.State.Hit))
+				head.localRotation = Quaternion.Euler(0, 0, 0);
+			else
+				head.LookAt(lure.transform.position);
+
+			head.localRotation = Quaternion.RotateTowards(oldRotation, head.localRotation, 180f * Time.deltaTime);
+
+			Camera.main.transform.rotation = head.rotation;
+			SetCamera(head);
+		}
+
 		// Used for scenes where the focused character cannot be controlled.
 		public static void ScenePoV()
 		{
@@ -296,6 +324,12 @@ namespace AI_PovX
 		public static void FreeRoamPoV()
 		{
 			PlayerActor player = Map.Instance.Player;
+
+			if (player.Controller.State is AIProject.Player.Fishing)
+            {
+				FishingPoV();
+				return;
+            }
 
 			// When the player is unable to move, treat it as a scene.
 			if (!(player.Controller.State is AIProject.Player.Normal))
