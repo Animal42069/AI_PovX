@@ -211,6 +211,9 @@ namespace AI_PovX
 
 		public static void RotatePlayerTowardsCharacter(ChaControl character)
         {
+			if (!toggled)
+				return;
+
 			PlayerActor player = Map.Instance.Player;
 
 			Vector3 playerPosition = player.Position;
