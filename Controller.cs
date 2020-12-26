@@ -295,7 +295,7 @@ namespace AI_PovX
 			else
 				head.LookAt(lure.transform.position);
 
-			head.localRotation = Quaternion.RotateTowards(oldRotation, head.localRotation, 180f * Time.deltaTime);
+			head.localRotation = Quaternion.RotateTowards(oldRotation, head.localRotation, 120f * Time.deltaTime);
 
 			Camera.main.transform.rotation = head.rotation;
 			SetCamera(head);
