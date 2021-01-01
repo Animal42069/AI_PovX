@@ -1,6 +1,7 @@
 ﻿using AIChara;
 using AIProject;
 using Manager;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -32,6 +33,7 @@ namespace AI_PovX
 		public static float backupFov;
 
 		public static bool inScene;
+		public static bool inHScene;
 		public static bool lockMaleHeadPosition;
 
 		public static HScene hScene;
@@ -40,6 +42,10 @@ namespace AI_PovX
 		private static readonly List<string> maleLockHeadAllHPositions = new List<string>() { "aia_f_10", "ait_f_00", "ait_f_07"};
 		private static readonly List<string> maleLockHeadHPositions = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_04", "aia_f_06", "aia_f_07", "aia_f_08", "aia_f_11", "aia_f_12", "aia_f_13", "aia_f_18", "aia_f_19", "aia_f_23", "aia_f_24", "aia_f_26", "ai3p", "h2a_f_00" };
 		private static readonly List<string> lockHeadHMotionExceptions = new List<string>() { "Idle", "_A" };
+
+		public static bool agentHeadRotationReached = true;
+		public static Transform agentHead;
+		public static Vector3 agentTargetHeadRotation = new Vector3 (0, 0, 0);
 
 		public static void TogglePoV(bool flag)
 		{
@@ -85,7 +91,7 @@ namespace AI_PovX
 			if (!toggled)
 				return;
 
-			if (Tools.IsHScene())
+			if (inHScene)
 			{
 				if (AI_PovX.CharaCycleKey.Value.IsDown())
 				{
@@ -125,10 +131,10 @@ namespace AI_PovX
 
 			if (Cursor.lockState != CursorLockMode.None || AI_PovX.CameraDragKey.Value.IsPressed())
 			{
-				if (Tools.IsHScene() && lockMaleHeadPosition)
+				if (inHScene && lockMaleHeadPosition)
 				{
 					cameraAngleOffsetX = Mathf.Clamp(cameraAngleOffsetX - x, -(AI_PovX.CameraMaxX.Value - AI_PovX.HeadMaxX.Value), (AI_PovX.CameraMinX.Value - AI_PovX.HeadMinX.Value));
-					cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -(AI_PovX.CameraSpanY.Value- AI_PovX.HeadMaxY.Value), (AI_PovX.CameraSpanY.Value - AI_PovX.HeadMaxY.Value));
+					cameraAngleOffsetY = Mathf.Clamp(cameraAngleOffsetY + y, -(AI_PovX.CameraSpanY.Value - AI_PovX.HeadMaxY.Value), (AI_PovX.CameraSpanY.Value - AI_PovX.HeadMaxY.Value));
 					headAngleOffsetX = 0;
 					headAngleOffsetY = 0;
 				}
@@ -142,19 +148,27 @@ namespace AI_PovX
 
 				cameraAngleY = Tools.Mod2(cameraAngleY + y, 360f);
 			}
+
+			if (!agentHeadRotationReached && agentHead != null)
+			{
+				Quaternion oldRotation = agentHead.localRotation;
+				agentHead.localRotation = Quaternion.RotateTowards(oldRotation, Quaternion.Euler(agentTargetHeadRotation), 60f * Time.deltaTime);
+				if (agentHead.localRotation == oldRotation)
+					agentHeadRotationReached = true;
+			}
 		}
 
 		public static void LateUpdate()
 		{
 			if (toggled)
 			{
-				bool hScene = Tools.IsHScene();
+				inHScene = Tools.IsHScene();
 
 				// Make it so that the player doesn't go visible if they're not supposed to be in the scene.
-				if (!hScene || Map.Instance.Player.ChaControl.visibleAll)
+				if (!inHScene || Map.Instance.Player.ChaControl.visibleAll)
 					Map.Instance.Player.ChaControl.visibleAll = true;
 
-				if (hScene && AI_PovX.HSceneLockCursor.Value && !showCursor)
+				if (inHScene && AI_PovX.HSceneLockCursor.Value && !showCursor)
 				{
 					Cursor.lockState = CursorLockMode.Locked;
 					Cursor.visible = false;
@@ -208,7 +222,6 @@ namespace AI_PovX
 				HSceneManager.Instance.females[focus - 1]?.ChaControl;
 		}
 
-
 		public static void RotatePlayerTowardsCharacter(ChaControl character)
         {
 			if (!toggled)
@@ -223,7 +236,7 @@ namespace AI_PovX
 			Vector2 turnVector = new Vector2(agentPosition.x - playerPosition.x, agentPosition.z - playerPosition.z);
 
 			bodyAngle = player.Rotation.eulerAngles.y - Vector2.SignedAngle(playerForward, turnVector);
-			player.Rotation = bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
+			bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
 			var head = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
 			var leftEye = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
 			var rightEye = player.ChaControl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
@@ -236,12 +249,6 @@ namespace AI_PovX
 			headAngleOffsetY = cameraAngleOffsetY = 0;
 			cameraAngleY = head.eulerAngles.y;
 
-			head.localRotation = Quaternion.Euler(headAngleOffsetX, headAngleOffsetY, 0);
-
-			Camera.main.transform.rotation = head.rotation;
-			Camera.main.transform.Rotate(new Vector3(cameraAngleOffsetX - headAngleOffsetX, cameraAngleOffsetY - headAngleOffsetY, 0f));
-
-			SetCamera(head);
 
 			leftEye = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
 			rightEye = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
@@ -254,12 +261,16 @@ namespace AI_PovX
 
 		public static void RotateCharacterHead(ChaControl character, float rotationX)
         {
-			Transform head = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
-
-			if (head == null)
+			if (!toggled)
 				return;
 
-			head.localEulerAngles = new Vector3(rotationX, 0, 0);
+			agentHead = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
+
+			if (agentHead == null)
+				return;
+
+			agentTargetHeadRotation = new Vector3(rotationX, 0, 0);
+			agentHeadRotationReached = false;
 		}
 
 		public static void SetCamera(Transform head)
@@ -315,6 +326,9 @@ namespace AI_PovX
 				SetChaControl(FromFocus());
 			}
 
+			PlayerActor player = Map.Instance.Player;
+			player.Rotation = Quaternion.RotateTowards(player.Rotation, bodyQuaternion, 120f * Time.deltaTime);
+
 			Transform head = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
 			head.localRotation = Quaternion.Euler(headAngleOffsetX, headAngleOffsetY, 0);
 
@@ -355,6 +369,7 @@ namespace AI_PovX
 				bodyAngle = cameraAngleY;
 				bodyQuaternion = Quaternion.Euler(0f, bodyAngle, 0f);
 				headAngleOffsetY = cameraAngleOffsetY = 0;
+				player.ChaControl.objAnim.transform.localRotation = bodyQuaternion;
 			}
 			else
 			{
@@ -393,7 +408,7 @@ namespace AI_PovX
 		{
 			lockMaleHeadPosition = false;
 
-			if (!Tools.IsHScene() || hScene == null)
+			if (!inHScene || hScene == null)
 				return;
 
 			string currentHAnimation = hScene.ctrlFlag.nowAnimationInfo.fileFemale;

@@ -10,7 +10,7 @@ namespace AI_PovX
 	{
 		const string GUID = "com.2155x.fairbair.ai_povx";
 		const string Name = "AI PoV X";
-		const string Version = "1.1.1";
+		const string Version = "1.1.2";
 
 		const string SECTION_GENERAL = "General";
 		const string SECTION_CAMERA = "Camera";
@@ -112,12 +112,12 @@ namespace AI_PovX
 				return;
 
 			HideHead = Config.Bind(SECTION_GENERAL, "Hide Head", false, DESCRIPTION_HIDE_HEAD);
-			HideHeadScaleZ = Config.Bind(SECTION_GENERAL, "Hide Head Scale Z", 0.1f, new ConfigDescription(DESCRIPTION_HIDE_HEAD_SCALE_Z, new AcceptableValueRange<float>(0f, 1f)));
-			RevealAll = Config.Bind(SECTION_GENERAL, "Reveal All Girls", true, DESCRIPTION_REVEAL_ALL);
+			HideHeadScaleZ = Config.Bind(SECTION_GENERAL, "Hide Head Scale Z", 0.5f, new ConfigDescription(DESCRIPTION_HIDE_HEAD_SCALE_Z, new AcceptableValueRange<float>(0f, 1f)));
+			RevealAll = Config.Bind(SECTION_GENERAL, "Reveal All Girls", false, DESCRIPTION_REVEAL_ALL);
 			HSceneLockCursor = Config.Bind(SECTION_GENERAL, "Lock Cursor During H Scenes", false, DESCRIPTION_H_SCENE_LOCK_CURSOR);
 
 			Sensitivity = Config.Bind(SECTION_CAMERA, "Camera Sensitivity", 2f);
-			NearClip = Config.Bind(SECTION_CAMERA, "Camera Near Clip Plane", 0.75f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 2f)));
+			NearClip = Config.Bind(SECTION_CAMERA, "Camera Near Clip Plane", 0.1f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 2f)));
 			Fov = Config.Bind(SECTION_CAMERA, "Field of View", 60f);
 			ZoomFov = Config.Bind(SECTION_CAMERA, "Zoom Field of View", 15f);
 			OffsetX = Config.Bind(SECTION_CAMERA, "Offset X", 0f, DESCRIPTION_OFFSET_X);
