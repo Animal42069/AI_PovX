@@ -10,7 +10,7 @@ namespace AI_PovX
 	{
 		const string GUID = "com.2155x.fairbair.ai_povx";
 		const string Name = "AI PoV X";
-		const string Version = "1.1.2";
+		const string Version = "1.1.3";
 
 		const string SECTION_GENERAL = "General";
 		const string SECTION_CAMERA = "Camera";
@@ -20,6 +20,9 @@ namespace AI_PovX
 		const string DESCRIPTION_REVEAL_ALL =
 			"Should all the girls (including the merchant) be visible at all times? " +
 			"Also applies outside of PoV mode. " +
+			"Does not apply during housing mode.";
+		const string DESCRIPTION_REVEAL_PARTNER =
+			"Should your partner during events be visible at all times? " +
 			"Does not apply during housing mode.";
 		const string DESCRIPTION_H_SCENE_LOCK_CURSOR =
 			"Should the cursor be locked during H scenes? " +
@@ -74,6 +77,7 @@ namespace AI_PovX
 		internal static ConfigEntry<float> HideHeadScaleZ { get; set; }
 		internal static ConfigEntry<bool> HeadBob { get; set; }
 		internal static ConfigEntry<bool> RevealAll { get; set; }
+		internal static ConfigEntry<bool> RevealPartner { get; set; }
 		internal static ConfigEntry<bool> HSceneLockCursor { get; set; }
 
 		internal static ConfigEntry<float> Sensitivity { get; set; }
@@ -114,6 +118,7 @@ namespace AI_PovX
 			HideHead = Config.Bind(SECTION_GENERAL, "Hide Head", false, DESCRIPTION_HIDE_HEAD);
 			HideHeadScaleZ = Config.Bind(SECTION_GENERAL, "Hide Head Scale Z", 0.5f, new ConfigDescription(DESCRIPTION_HIDE_HEAD_SCALE_Z, new AcceptableValueRange<float>(0f, 1f)));
 			RevealAll = Config.Bind(SECTION_GENERAL, "Reveal All Girls", false, DESCRIPTION_REVEAL_ALL);
+			RevealPartner = Config.Bind(SECTION_GENERAL, "Reveal Partner", true, DESCRIPTION_REVEAL_PARTNER);
 			HSceneLockCursor = Config.Bind(SECTION_GENERAL, "Lock Cursor During H Scenes", false, DESCRIPTION_H_SCENE_LOCK_CURSOR);
 
 			Sensitivity = Config.Bind(SECTION_CAMERA, "Camera Sensitivity", 2f);

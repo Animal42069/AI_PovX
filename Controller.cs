@@ -191,6 +191,12 @@ namespace AI_PovX
 				if (merchant != null)
 					merchant.ChaControl.visibleAll = true;
 			}
+
+			if (AI_PovX.RevealPartner.Value)
+			{
+				if (Map.Instance.Player.AgentPartner != null)
+					Map.Instance.Player.AgentPartner.ChaControl.visibleAll = true;
+			}
 		}
 
 		public static void SetChaControl(ChaControl next)
@@ -349,7 +355,7 @@ namespace AI_PovX
             }
 
 			// When the player is unable to move, treat it as a scene.
-			if (!(player.Controller.State is AIProject.Player.Normal))
+			if (!(player.Controller.State is AIProject.Player.Normal) && !(player.Controller.State is AIProject.Player.Onbu))
 			{
 				ScenePoV();
 				return;
