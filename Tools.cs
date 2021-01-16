@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace AI_PovX
 {
-	public static class Tools
+    public static class Tools
 	{
 		public static bool IsMainGame()
 		{
@@ -19,23 +19,30 @@ namespace AI_PovX
 			return Map.Instance.Player.CameraControl.Mode == CameraMode.H;
 		}
 
-		public static bool ShouldHideHead()
+		public static bool IsFishingScene()
 		{
-			return Controller.toggled && (
-				Controller.inScene ||
-				AI_PovX.HideHead.Value ||
-				IsHScene()
-			);
+			return Map.Instance.Player.Controller.State is AIProject.Player.Fishing;
 		}
 
-		// Return the offset of the eyes in the neck's object space.
+		public static bool IsFreeRoam()
+		{
+			return Map.Instance.Player.Controller.State is AIProject.Player.Normal || Map.Instance.Player.Controller.State is AIProject.Player.Onbu;
+
+		}
+
+		public static bool ShouldHideHead()
+		{
+			return Controller.povEnabled && AI_PovX.HideHead.Value;
+		}
+
+		// Return the offset of the eyes in the head's object space.
 		public static Vector3 GetEyesOffset(ChaControl chaCtrl)
 		{
-			Transform head = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_Head_s")).FirstOrDefault();
+			Transform head = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Equals(Controller.headBone)).FirstOrDefault();
 
 			Transform[] eyes = new Transform[2];
-			eyes[0] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_L")).FirstOrDefault();
-			eyes[1] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cf_J_pupil_s_R")).FirstOrDefault();
+			eyes[0] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Equals(Controller.leftEyePupil)).FirstOrDefault();
+			eyes[1] = chaCtrl.GetComponentsInChildren<Transform>().Where(x => x.name.Equals(Controller.rightEyePupil)).FirstOrDefault();
 
 			if (AI_PovX.CameraPoVLocation.Value == AI_PovX.CameraLocation.LeftEye)
 				return GetEyesOffsetInternal(head, eyes[0]);
@@ -52,7 +59,7 @@ namespace AI_PovX
 		{
 			Vector3 offset = Vector3.zero;
 
-			for (int i = 0; i < 50; i++)
+			for (int bone = 0; bone < 50; bone++)
 			{
 				if (eye == null || eye == head)
 					break;
@@ -96,25 +103,41 @@ namespace AI_PovX
 			return value;
 		}
 
-		public static float GetHeadRotationX(Vector3 eyePosition, Vector3 lookTarget)
+		// Return True if Vectors are close enough to each other
+		public static bool VectorsEqual(Vector3 firstVector, Vector3 secondVector, float threshold = 0.01f)
 		{
-			float headRotationX = 0;
+			if (Math.Abs(firstVector.x - secondVector.x) > threshold)
+				return false;
+
+			if (Math.Abs(firstVector.y - secondVector.y) > threshold)
+				return false;
+
+			if (Math.Abs(firstVector.z - secondVector.z) > threshold)
+				return false;
+
+			return true;
+		}
+
+		// Calculate Pitch necessary to align eyes with lookTarget
+		public static float GetHeadPitch(Vector3 eyePosition, Vector3 lookTarget)
+		{
+			float headPitch = 0;
 			float hypotenuse = Vector3.Distance(eyePosition, lookTarget);
 			float side = Vector3.Distance(new Vector2(eyePosition.x, eyePosition.z), new Vector2(lookTarget.x, lookTarget.z));
 			if (hypotenuse != 0)
-				headRotationX = (float)(Math.Acos(side / hypotenuse) * 180 / Math.PI);
+				headPitch = (float)(Math.Acos(side / hypotenuse) * 180 / Math.PI);
 
 			if (lookTarget.y > eyePosition.y)
-				headRotationX = -headRotationX;
+				headPitch = -headPitch;
 
-			headRotationX = Tools.Mod2(headRotationX, 360f);
+			headPitch = Tools.Mod2(headPitch, 360f);
 
-			if (headRotationX > 180)
-				headRotationX -= 360;
-			if (headRotationX < -180)
-				headRotationX += 360;
+			if (headPitch > 180)
+				headPitch -= 360;
+			if (headPitch < -180)
+				headPitch += 360;
 
-			return Mathf.Clamp(headRotationX, -AI_PovX.HeadMaxX.Value, AI_PovX.HeadMinX.Value);
+			return Mathf.Clamp(headPitch, -AI_PovX.HeadMaxPitch.Value, AI_PovX.HeadMaxPitch.Value);
 		}
 	}
 }

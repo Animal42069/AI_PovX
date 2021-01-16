@@ -10,7 +10,7 @@ namespace AI_PovX
 	{
 		const string GUID = "com.2155x.fairbair.ai_povx";
 		const string Name = "AI PoV X";
-		const string Version = "1.1.3";
+		const string Version = "1.2.0";
 
 		const string SECTION_GENERAL = "General";
 		const string SECTION_CAMERA = "Camera";
@@ -35,13 +35,6 @@ namespace AI_PovX
 			"Vertical offset from the character's eyes.";
 		const string DESCRIPTION_OFFSET_Z =
 			"Forward offset from the character's eyes.";
-		const string DESCRIPTION_CAMERA_MIN_X =
-			"Highest downward and leftward angle the camera can rotate.";
-		const string DESCRIPTION_CAMERA_MAX_X =
-			"Highest upward and rightware angle the camera can rotate.";
-		const string DESCRIPTION_CAMERA_SPAN_Y =
-			"How far can the camera be rotated horizontally? " +
-			"Only applies during scenes where the player character can't move.";
 		const string DESCRIPTION_CAMERA_HEAD_BOB =
 			"Should the camera rotate up and down/side to side along with the head?" +
 			"Only applies with free roam camera.";
@@ -49,13 +42,14 @@ namespace AI_PovX
 		const string DESCRIPTION_ROTATE_HEAD =
 			"Should the head rotate first before turning the whole body? " +
 			"Only applies with free roam camera.";
-		const string DESCRIPTION_HEAD_MIN_X =
-			"Highest downward angle the head can rotate.";
-		const string DESCRIPTION_HEAD_MAX_X =
-			"Highest upward angle the head can rotate.";
-		const string DESCRIPTION_HEAD_MAX_Y =
-			"The farthest the head can rotate until the body would rotate. " +
-			"Only applies with free roam camera and the player isn't moving.";
+		const string DESCRIPTION_HEAD_MAX_PITCH =
+			"Highest upward/downward angle the head can rotate.";
+		const string DESCRIPTION_HEAD_MAX_YAW =
+			"The farthest the head can rotate left/right";
+		const string DESCRIPTION_EYE_MAX_PITCH =
+			"Highest upward/downward angle the eyes can rotate.";
+		const string DESCRIPTION_EYE_MAX_YAW =
+			"The farthest the eyes can rotate left/right";
 
 		const string DESCRIPTION_CHARA_CYCLE_KEY =
 			"Switch between characters during PoV mode. " +
@@ -87,15 +81,13 @@ namespace AI_PovX
 		internal static ConfigEntry<float> OffsetX { get; set; }
 		internal static ConfigEntry<float> OffsetY { get; set; }
 		internal static ConfigEntry<float> OffsetZ { get; set; }
-		internal static ConfigEntry<float> CameraMinX { get; set; }
-		internal static ConfigEntry<float> CameraMaxX { get; set; }
-		internal static ConfigEntry<float> CameraSpanY { get; set; }	
 		internal static ConfigEntry<CameraLocation> CameraPoVLocation { get; set; }
 
 		internal static ConfigEntry<bool> RotateHead { get; set; }
-		internal static ConfigEntry<float> HeadMinX { get; set; }
-		internal static ConfigEntry<float> HeadMaxX { get; set; }
-		internal static ConfigEntry<float> HeadMaxY { get; set; }
+		internal static ConfigEntry<float> HeadMaxPitch { get; set; }
+		internal static ConfigEntry<float> HeadMaxYaw { get; set; }
+		internal static ConfigEntry<float> EyeMaxPitch { get; set; }
+		internal static ConfigEntry<float> EyeMaxYaw { get; set; }
 
 		internal static ConfigEntry<KeyboardShortcut> PovKey { get; set; }
 		internal static ConfigEntry<KeyboardShortcut> CharaCycleKey { get; set; }
@@ -128,16 +120,14 @@ namespace AI_PovX
 			OffsetX = Config.Bind(SECTION_CAMERA, "Offset X", 0f, DESCRIPTION_OFFSET_X);
 			OffsetY = Config.Bind(SECTION_CAMERA, "Offset Y", 0f, DESCRIPTION_OFFSET_Y);
 			OffsetZ = Config.Bind(SECTION_CAMERA, "Offset Z", 0f, DESCRIPTION_OFFSET_Z);
-			CameraMinX = Config.Bind(SECTION_CAMERA, "Min Camera Angle X", 80f, DESCRIPTION_CAMERA_MIN_X);
-			CameraMaxX = Config.Bind(SECTION_CAMERA, "Max Camera Angle X", 80f, DESCRIPTION_CAMERA_MAX_X);
-			CameraSpanY = Config.Bind(SECTION_CAMERA, "Camera Angle Span Y", 90f, DESCRIPTION_CAMERA_SPAN_Y);
 			HeadBob = Config.Bind(SECTION_CAMERA, "Camera Head Bob", false, DESCRIPTION_CAMERA_HEAD_BOB);
 			CameraPoVLocation = Config.Bind(SECTION_CAMERA, "Camera Location", CameraLocation.Center);
 
 			RotateHead = Config.Bind(SECTION_ANIMATION, "Rotate Head", true, DESCRIPTION_ROTATE_HEAD);
-			HeadMinX = Config.Bind(SECTION_ANIMATION, "Min Neck Angle X", 45f, DESCRIPTION_HEAD_MIN_X);
-			HeadMaxX = Config.Bind(SECTION_ANIMATION, "Max Neck Angle X", 60f, DESCRIPTION_HEAD_MAX_X);
-			HeadMaxY = Config.Bind(SECTION_ANIMATION, "Max Head Angle Y", 60f, DESCRIPTION_HEAD_MAX_Y);
+			HeadMaxPitch = Config.Bind(SECTION_ANIMATION, "Max Head Pitch (Up/Down)", 50f, DESCRIPTION_HEAD_MAX_PITCH);
+			HeadMaxYaw = Config.Bind(SECTION_ANIMATION, "Max Head Yaw (Left/Right)", 60f, DESCRIPTION_HEAD_MAX_YAW);
+			EyeMaxPitch = Config.Bind(SECTION_ANIMATION, "Max Eye Pitch (Up/Down)", 30f, DESCRIPTION_EYE_MAX_PITCH);
+			EyeMaxYaw = Config.Bind(SECTION_ANIMATION, "Max Eye Yaw (Left/Right)", 30f, DESCRIPTION_EYE_MAX_YAW);
 
 			PovKey = Config.Bind(SECTION_HOTKEYS, "PoV Toggle Key", new KeyboardShortcut(KeyCode.Comma));
 			CharaCycleKey = Config.Bind(SECTION_HOTKEYS, "Character Cycle Key", new KeyboardShortcut(KeyCode.Period), DESCRIPTION_CHARA_CYCLE_KEY);
@@ -145,24 +135,13 @@ namespace AI_PovX
 			CursorReleaseKey = Config.Bind(SECTION_HOTKEYS, "Cursor Release Key", new KeyboardShortcut(KeyCode.LeftControl), DESCRIPTION_CURSOR_RELEASE_KEY);
 			ZoomKey = Config.Bind(SECTION_HOTKEYS, "Zoom Key", new KeyboardShortcut(KeyCode.Z));
 
-			CameraPoVLocation.SettingChanged += (sender, args) =>
-			{
-				Controller.SetChaControl(Controller.FromFocus());
-			};
-
-			HideHead.SettingChanged += (sender, args) =>
-			{
-				Controller.SetChaControl(Controller.FromFocus());
-			};
-
-			HideHeadScaleZ.SettingChanged += (sender, args) =>
-			{
-				Controller.SetChaControl(Controller.FromFocus());
-			};
+			CameraPoVLocation.SettingChanged += (sender, args) => { Controller.CalculateEyesOffset(); };
+			HideHead.SettingChanged += (sender, args) => { Controller.AdjustPoVHeadScale(); };
+			HideHeadScaleZ.SettingChanged += (sender, args) => { Controller.AdjustPoVHeadScale(); };
 
 			HSceneLockCursor.SettingChanged += (sender, args) =>
 			{
-				if (Controller.toggled && !HSceneLockCursor.Value)
+				if (Controller.povEnabled && !HSceneLockCursor.Value)
 				{
 					Cursor.lockState = CursorLockMode.None;
 					Cursor.visible = true;
@@ -177,8 +156,7 @@ namespace AI_PovX
 			if (!Tools.IsMainGame() ||
 				!Map.IsInstance() ||
 				Map.Instance.Player == null ||
-				Manager.Housing.Instance.IsCraft ||
-				Time.timeScale == 0)
+				Manager.Housing.Instance.IsCraft)
 				return;
 
 			Controller.Update();
@@ -189,8 +167,7 @@ namespace AI_PovX
 			if (!Tools.IsMainGame() ||
 				!Map.IsInstance() ||
 				Map.Instance.Player == null ||
-				Manager.Housing.Instance.IsCraft ||
-				Time.timeScale == 0)
+				Manager.Housing.Instance.IsCraft)
 				return;
 
 			Controller.LateUpdate();
