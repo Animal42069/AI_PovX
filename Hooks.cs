@@ -21,19 +21,19 @@ namespace AI_PovX
 			return false;
 		}
 
-		[HarmonyPrefix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVCamera")]
+		[HarmonyPostfix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVCamera")]
 		public static void Manager_ChangeADVCamera(Actor actor)
         {
 			Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
 		}
 
-		[HarmonyPrefix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVCameraDiagonal")]
+		[HarmonyPostfix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVCameraDiagonal")]
 		public static void Manager_ChangeADVCameraDiagonal(Actor actor)
 		{
 			Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
 		}
 
-		[HarmonyPrefix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVFixedAngleCamera")]
+		[HarmonyPostfix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVFixedAngleCamera")]
 		public static void Manager_ChangeADVFixedAngleCamera(Actor actor, int attitudeID)
 		{
 			Controller.RotatePlayerTowardsCharacter(actor.ChaControl);

@@ -245,6 +245,9 @@ namespace AI_PovX
 			if (player == null)
 				return;
 
+			if (!player.isActiveAndEnabled)
+				player.enabled = true;
+
 			Vector3 playerPosition = player.Position;
 			Vector3 agentPosition = character.objBodyBone.transform.position;
 
