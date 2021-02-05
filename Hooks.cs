@@ -1,6 +1,7 @@
 ﻿using AIChara;
 using AIProject;
 using HarmonyLib;
+using Manager;
 using System;
 using UnityEngine;
 
@@ -24,19 +25,22 @@ namespace AI_PovX
 		[HarmonyPostfix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVCamera")]
 		public static void Manager_ChangeADVCamera(Actor actor)
         {
-			Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
+			if (Map.Instance.Player.CameraControl.Mode != CameraMode.ADVExceptStand)
+				Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
 		}
 
 		[HarmonyPostfix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVCameraDiagonal")]
 		public static void Manager_ChangeADVCameraDiagonal(Actor actor)
 		{
-			Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
+			if (Map.Instance.Player.CameraControl.Mode != CameraMode.ADVExceptStand)
+				Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
 		}
 
 		[HarmonyPostfix, HarmonyPatch(typeof(Manager.ADV), "ChangeADVFixedAngleCamera")]
 		public static void Manager_ChangeADVFixedAngleCamera(Actor actor, int attitudeID)
 		{
-			Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
+			if (Map.Instance.Player.CameraControl.Mode != CameraMode.ADVExceptStand)
+				Controller.RotatePlayerTowardsCharacter(actor.ChaControl);
 		}
 
 		[HarmonyPostfix, HarmonyPatch(typeof(AgentActor), "VanishCommands")]

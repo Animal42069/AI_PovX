@@ -67,6 +67,9 @@ namespace AI_PovX
 		const string DESCRIPTION_HIDE_HEAD_SCALE_Z =
 			"Amount to scale Z when hiding head.";
 
+		const string DESCRIPTION_CAMERA_LOCK_HEAD_KEY =
+			"During PoV mode in HScenes, pressing this key will lock/unlock the characters head to the default animation position.";
+
 		internal static ConfigEntry<bool> HideHead { get; set; }
 		internal static ConfigEntry<float> HideHeadScaleZ { get; set; }
 		internal static ConfigEntry<bool> HeadBob { get; set; }
@@ -94,6 +97,7 @@ namespace AI_PovX
 		internal static ConfigEntry<KeyboardShortcut> CameraDragKey { get; set; }
 		internal static ConfigEntry<KeyboardShortcut> CursorReleaseKey { get; set; }
 		internal static ConfigEntry<KeyboardShortcut> ZoomKey { get; set; }
+		internal static ConfigEntry<KeyboardShortcut> HeadLockKey { get; set; }
 
 		public enum CameraLocation
         {
@@ -134,10 +138,12 @@ namespace AI_PovX
 			CameraDragKey = Config.Bind(SECTION_HOTKEYS, "Camera Drag Key", new KeyboardShortcut(KeyCode.Mouse0), DESCRIPTION_CAMERA_DRAG_KEY);
 			CursorReleaseKey = Config.Bind(SECTION_HOTKEYS, "Cursor Release Key", new KeyboardShortcut(KeyCode.LeftControl), DESCRIPTION_CURSOR_RELEASE_KEY);
 			ZoomKey = Config.Bind(SECTION_HOTKEYS, "Zoom Key", new KeyboardShortcut(KeyCode.Z));
+			HeadLockKey = Config.Bind(SECTION_HOTKEYS, "Lock Head Key", new KeyboardShortcut(KeyCode.X), DESCRIPTION_CAMERA_LOCK_HEAD_KEY);
 
 			CameraPoVLocation.SettingChanged += (sender, args) => { Controller.CalculateEyesOffset(); };
 			HideHead.SettingChanged += (sender, args) => { Controller.AdjustPoVHeadScale(); };
 			HideHeadScaleZ.SettingChanged += (sender, args) => { Controller.AdjustPoVHeadScale(); };
+			HeadLockKey.SettingChanged += (sender, args) => { Controller.lockMaleHeadPosition = !Controller.lockMaleHeadPosition; };
 
 			HSceneLockCursor.SettingChanged += (sender, args) =>
 			{

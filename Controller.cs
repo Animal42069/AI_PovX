@@ -138,6 +138,24 @@ namespace AI_PovX
 			}
 		}
 
+		public static void ResetPoVRotations()
+        {
+			ResetPoVPitch();
+			ResetPoVYaw();
+		}
+
+		public static void ResetPoVPitch()
+		{
+			cameraLocalPitch = headLocalPitch = eyeLocalPitch = 0f;
+		}
+
+		public static void ResetPoVYaw()
+		{
+			cameraLocalYaw = headLocalYaw = eyeLocalYaw = 0f;
+			cameraWorldYaw = povHead.eulerAngles.y;
+			bodyWorldYaw = Map.Instance.Player.Rotation.eulerAngles.y;
+		}
+
 		public static void EnablePoV(bool enable)
 		{
 			if (povEnabled == enable)
@@ -147,12 +165,7 @@ namespace AI_PovX
 			if (enable)
 			{
 				SetPoVCharacter(GetCharacterFromFocus(currentFocus));
-
-				cameraLocalPitch = headLocalPitch = eyeLocalPitch = 0f;
-				cameraLocalYaw = headLocalYaw = eyeLocalYaw = 0f;
-
-				cameraWorldYaw = povHead.eulerAngles.y;
-				bodyWorldYaw = Map.Instance.Player.Rotation.eulerAngles.y;
+				ResetPoVRotations();
 				backupFoV = Camera.main.fieldOfView;
 			}
 			else
@@ -238,7 +251,7 @@ namespace AI_PovX
 
 		public static void RotatePlayerTowardsCharacter(ChaControl character)
         {
-			if (!povEnabled || currentFocus != Focus.Player)
+			if (!povEnabled || currentFocus != Focus.Player || povCharacter == null)
 				return;
 
 			PlayerActor player = Map.Instance.Player;
@@ -366,7 +379,6 @@ namespace AI_PovX
 
 			Quaternion currentRotation = povHead.localRotation;
 
-
 			if (lure == null || (lure.state != AIProject.MiniGames.Fishing.Lure.State.Float && lure.state != AIProject.MiniGames.Fishing.Lure.State.Hit))
 				povHead.localRotation = Quaternion.identity;
 			else
@@ -482,6 +494,9 @@ namespace AI_PovX
 
 			inScene = isInScene;
 			SetPoVCharacter(GetCharacterFromFocus(Focus.Player));
+
+			if (!inScene)
+				ResetPoVYaw();
 		}
 
 		public static void AdjustPoVHeadScale()
