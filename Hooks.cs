@@ -15,10 +15,11 @@ namespace AI_PovX
 			if (Manager.Housing.Instance.IsCraft ||
 				!Controller.povEnabled ||
 				Controller.povCharacter == null ||
-				__instance != Controller.povCharacter.neckLookCtrl)
+				Controller.povSetThisFrame ||
+				(Controller.povCharacter.neckLookCtrl.enabled && __instance != Controller.povCharacter.neckLookCtrl))
 				return true;
 
-				Controller.UpdatePoVNeck();
+			Controller.UpdatePoVCamera();
 			return false;
 		}
 
@@ -80,12 +81,36 @@ namespace AI_PovX
 		}
 
 		[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
-		public static void ChaControl_Post_SetPlay(ChaControl __instance, string _strAnmName)
+		public static void ChaControl_Post_SetPlay(string _strAnmName)
 		{
-			if (__instance == null || _strAnmName.IsNullOrEmpty())
+			if (_strAnmName.IsNullOrEmpty())
 				return;
 
 			Controller.CheckHSceneHeadLock(_strAnmName);
+		}
+
+		[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "AnimPlay")]
+		public static void ChaControl_Post_AnimPlay(string stateName)
+		{
+			if (stateName.IsNullOrEmpty())
+				return;
+
+			Controller.CheckHSceneHeadLock(stateName);
+		}
+
+		[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "syncPlay", typeof(string), typeof(int), typeof(float))]
+		public static void ChaControl_Post_SyncPlay(string _strameHash)
+		{
+			if (_strameHash.IsNullOrEmpty())
+				return;
+
+			Controller.CheckHSceneHeadLock(_strameHash);
+		}
+
+		[HarmonyPrefix, HarmonyPatch(typeof(CameraControl_Ver2), "LateUpdate")]
+		public static bool Prefix_CameraControl_Ver2_LateUpdate()
+		{
+			return !Controller.povEnabled;
 		}
 	}
 }
